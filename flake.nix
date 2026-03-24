@@ -4,6 +4,7 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
     sherpa-onnx.url = "github:kakapt/sherpa-onnx-flake";
+    sherpa-onnx.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs =
