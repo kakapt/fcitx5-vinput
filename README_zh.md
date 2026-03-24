@@ -62,16 +62,53 @@ sudo apt-get install -f
 ### Nix（通过 flake）
 
 - 当前支持 `x86_64-linux` 和 `aarch64-linux`
-- 将 `fcitx5-vinput` flake 添加到你的 flake inputs 中：
+
+#### Home Manager 使用示例
+
+- 将 `fcitx5-vinput` 添加为你的 flake 输入：
 
 ```nix
-fcitx5-vinput = {
-  url = "github:xifan2333/fcitx5-vinput";
-  inputs.nixpkgs.follows = "nixpkgs";
-};
+{
+  description = "Your flake description";
+
+  inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
+    home-manager.url = "github:nix-community/home-manager";
+    home-manager.inputs.nixpkgs.follows = "nixpkgs";
+
+    fcitx5-vinput = {
+      url = "github:xifan2333/fcitx5-vinput";
+    };
+  };
+
+  outputs =
+    {
+      self,
+      nixpkgs,
+      nixos-hardware,
+      home-manager,
+      ...
+    }@inputs:
+    let
+      system = "x86_64-linux";
+      pkgs = import nixpkgs {
+        inherit system;
+      };
+      homeManagerConfiguration = home-manager.lib.homeManagerConfiguration;
+    in
+    {
+      homeConfigurations = {
+        "kakapt@krypton" = homeManagerConfiguration {
+          inherit pkgs;
+          modules = [ ./your_home_module.nix ];
+          extraSpecialArgs = inputs;
+        };
+      };
+    };
+}
 ```
 
-- 将 `fcitx5-vinput` 添加到你的 `fcitx5` 插件中。以下是 Home Manager 示例：
+- 然后将 `fcitx5-vinput` 放入你的 `fcitx5` 插件包装中：
 
 ```nix
 { pkgs, ... }@inputs:

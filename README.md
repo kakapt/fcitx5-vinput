@@ -62,16 +62,53 @@ sudo apt-get install -f
 ### Nix (via flake)
 
 - Currently supports `x86_64-linux` and `aarch64-linux`
-- Add `fcitx5-vinput` flake to your flake `inputs`:
+
+#### Home manager usage example
+
+- Add `fcitx5-vinput` as your flake input:
 
 ```nix
-fcitx5-vinput = {
-  url = "github:xifan2333/fcitx5-vinput";
-  inputs.nixpkgs.follows = "nixpkgs";
-};
+{
+  description = "Your flake description";
+
+  inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
+    home-manager.url = "github:nix-community/home-manager";
+    home-manager.inputs.nixpkgs.follows = "nixpkgs";
+
+    fcitx5-vinput = {
+      url = "github:xifan2333/fcitx5-vinput";
+    };
+  };
+
+  outputs =
+    {
+      self,
+      nixpkgs,
+      nixos-hardware,
+      home-manager,
+      ...
+    }@inputs:
+    let
+      system = "x86_64-linux";
+      pkgs = import nixpkgs {
+        inherit system;
+      };
+      homeManagerConfiguration = home-manager.lib.homeManagerConfiguration;
+    in
+    {
+      homeConfigurations = {
+        "kakapt@krypton" = homeManagerConfiguration {
+          inherit pkgs;
+          modules = [ ./your_home_module.nix ];
+          extraSpecialArgs = inputs;
+        };
+      };
+    };
+}
 ```
 
-- Add `fcitx5-vinput` to your fcitx5 addon. Home Manager example:
+- Then put `fcitx5-vinput` into your `fcitx5` addon wrapper:
 
 ```nix
 { pkgs, ... }@inputs:
