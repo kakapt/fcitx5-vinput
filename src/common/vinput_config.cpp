@@ -58,7 +58,14 @@ std::string SceneMenuKeyLabel() { return _("Postprocess Menu Keys"); }
 
 std::string SceneMenuKeyTooltip() {
   return _("Configure one or more keys to open the postprocess menu. The "
-           "default is Right Alt + Control.");
+           "default is Right Shift.");
+}
+
+std::string ModelMenuKeyLabel() { return _("Model Menu Keys"); }
+
+std::string ModelMenuKeyTooltip() {
+  return _("Configure one or more keys to open the model selection menu. "
+           "The default is F8.");
 }
 
 std::string PagePrevKeysLabel() { return _("Previous Page Keys"); }
@@ -86,6 +93,9 @@ VinputConfig::VinputConfig(const VinputSettings &settings)
       commandKeys(this, "CommandKeys", CommandKeysLabel(), settings.commandKeys,
                   TriggerKeyListConstrain(), {},
                   fcitx::ToolTipAnnotation(CommandKeysTooltip())),
+      modelMenuKeys(this, "ModelMenuKey", ModelMenuKeyLabel(),
+                   settings.modelMenuKeys, SceneMenuKeyListConstrain(), {},
+                   fcitx::ToolTipAnnotation(ModelMenuKeyTooltip())),
       sceneMenuKeys(this, "SceneMenuKey", SceneMenuKeyLabel(),
                    settings.sceneMenuKeys, SceneMenuKeyListConstrain(), {},
                    fcitx::ToolTipAnnotation(SceneMenuKeyTooltip())),
@@ -103,6 +113,7 @@ VinputSettings VinputConfig::settings() const {
   settings.triggerKeys = triggerKeys.value();
   settings.commandKeys = commandKeys.value();
   settings.sceneMenuKeys = sceneMenuKeys.value();
+  settings.modelMenuKeys = modelMenuKeys.value();
   settings.pagePrevKeys = pagePrevKeys.value();
   settings.pageNextKeys = pageNextKeys.value();
   return settings;

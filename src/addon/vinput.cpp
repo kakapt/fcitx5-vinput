@@ -120,6 +120,9 @@ VinputEngine::VinputEngine(fcitx::Instance *instance) : instance_(instance) {
         if (scene_menu_ic_ == ic) {
           hideSceneMenu();
         }
+        if (model_menu_ic_ == ic) {
+          hideModelMenu();
+        }
         if (result_menu_ic_ == ic) {
           hideResultMenu();
         }
@@ -166,7 +169,9 @@ void VinputEngine::applySettings() {
   trigger_keys_ = settings_.triggerKeys;
   command_keys_ = settings_.commandKeys;
   scene_menu_key_ = settings_.sceneMenuKeys;
+  model_menu_key_ = settings_.modelMenuKeys;
   reloadSceneConfig();
+  reloadModelList();
 }
 
 void VinputEngine::reloadSceneConfig() {

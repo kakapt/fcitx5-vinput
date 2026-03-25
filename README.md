@@ -99,6 +99,7 @@ vinput model use <model-name>   # Set as active model
 ```
 
 Or manually place a model directory in `~/.local/share/vinput/models/<model-name>/` containing:
+
 - `vinput-model.json`
 - `model.int8.onnx` or `model.onnx`
 - `tokens.txt`
@@ -120,16 +121,17 @@ Open Fcitx5 Configuration → Addons → Find **Vinput** → Enable.
 
 ## Key Bindings
 
-| Key | Default | Function |
-|-----|---------|----------|
-| Trigger Key | `Alt_R` | Tap to toggle recording; hold to push-to-talk |
-| Command Key | `Control_R` | Hold after selecting text to modify with voice |
-| Scene Menu Key | `Shift_R` | Open scene switcher |
-| Page Up / Down | `Page Up` / `Page Down` | Navigate candidate list |
-| Move | `↑` / `↓` | Move cursor in candidate list |
-| Confirm | `Enter` | Confirm selected candidate |
-| Cancel | `Esc` | Close menu |
-| Quick Select | `1`–`9` | Quick-pick candidate |
+| Key            | Default                 | Function                                       |
+| -------------- | ----------------------- | ---------------------------------------------- |
+| Trigger Key    | `Alt_R`                 | Tap to toggle recording; hold to push-to-talk  |
+| Command Key    | `Control_R`             | Hold after selecting text to modify with voice |
+| Model Menu Key | `F8`                    | Open model switcher                            |
+| Scene Menu Key | `Shift_R`               | Open scene switcher                            |
+| Page Up / Down | `Page Up` / `Page Down` | Navigate candidate list                        |
+| Move           | `↑` / `↓`               | Move cursor in candidate list                  |
+| Confirm        | `Enter`                 | Confirm selected candidate                     |
+| Cancel         | `Esc`                   | Close menu                                     |
+| Quick Select   | `1`–`9`                 | Quick-pick candidate                           |
 
 All keys can be customized in Fcitx5 configuration.
 
@@ -279,6 +281,7 @@ vinput init                     # Create default config and model directories
 Scenes control how LLM processes recognition results. Switch between them at runtime using the scene menu key.
 
 Each scene has:
+
 - **ID** — unique identifier
 - **Label** — display name in the menu
 - **Prompt** — system prompt sent to the LLM
@@ -296,6 +299,7 @@ convenient, but it also means stale or unrelated selected text may be sent into
 the command rewrite flow if your primary selection is not what you expect.
 
 **Examples:**
+
 - Select Chinese text → say *"translate to English"* → replaced with translation
 - Select code → say *"add comments"* → replaced with commented version
 
@@ -437,11 +441,11 @@ Reference implementations:
 
 ## Configuration Files
 
-| File | Path |
-|------|------|
-| Plugin config (keybindings, etc.) | `~/.config/fcitx5/conf/vinput.conf` |
-| Core config (model, LLM, scenes) | `~/.config/vinput/config.json` |
-| Model directory | `~/.local/share/fcitx5-vinput/models/` |
+| File                              | Path                                   |
+| --------------------------------- | -------------------------------------- |
+| Plugin config (keybindings, etc.) | `~/.config/fcitx5/conf/vinput.conf`    |
+| Core config (model, LLM, scenes)  | `~/.config/vinput/config.json`         |
+| Model directory                   | `~/.local/share/fcitx5-vinput/models/` |
 
 ## Flatpak
 
@@ -468,11 +472,11 @@ flatpak kill org.fcitx.Fcitx5
 
 Flatpak configuration files are usually located in `.var/app`
 
-| File | Path |
-|------|------|
+| File                              | Path                                                         |
+| --------------------------------- | ------------------------------------------------------------ |
 | Plugin config (keybindings, etc.) | `~/.var/app/org.fcitx.Fcitx5/config/fcitx5/conf/vinput.conf` |
-| Core config (model, LLM, scenes) | `~/.var/app/org.fcitx.Fcitx5/config/vinput/config.json` |
-| Model directory | `~/.var/app/org.fcitx.Fcitx5/data/vinput/models/` |
+| Core config (model, LLM, scenes)  | `~/.var/app/org.fcitx.Fcitx5/config/vinput/config.json`      |
+| Model directory                   | `~/.var/app/org.fcitx.Fcitx5/data/vinput/models/`            |
 
 ## Release
 

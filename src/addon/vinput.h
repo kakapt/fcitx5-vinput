@@ -17,6 +17,7 @@
 #include "common/recognition_result.h"
 #include "common/vinput_config.h"
 #include "common/error_info.h"
+#include "common/model_manager.h"
 
 class VinputNotifierDBusObject;
 
@@ -25,6 +26,7 @@ public:
   VinputEngine(fcitx::Instance *instance);
   ~VinputEngine() override;
   void selectScene(std::size_t index, fcitx::InputContext *ic);
+  void selectModel(std::size_t index, fcitx::InputContext *ic);
   void selectResultCandidate(std::size_t index, fcitx::InputContext *ic);
 
   void reloadConfig() override;
@@ -40,6 +42,10 @@ private:
   void showSceneMenu(fcitx::InputContext *ic);
   void hideSceneMenu();
   bool handleSceneMenuKeyEvent(fcitx::KeyEvent &keyEvent);
+  void showModelMenu(fcitx::InputContext *ic);
+  void hideModelMenu();
+  bool handleModelMenuKeyEvent(fcitx::KeyEvent &keyEvent);
+  void reloadModelList();
   void showResultMenu(fcitx::InputContext *ic,
                       const vinput::result::Payload &payload);
   void hideResultMenu();
@@ -91,9 +97,11 @@ private:
   fcitx::InputContext *status_ic_ = nullptr;
   fcitx::InputContext *scene_menu_ic_ = nullptr;
   fcitx::InputContext *result_menu_ic_ = nullptr;
+  fcitx::InputContext *model_menu_ic_ = nullptr;
   fcitx::KeyList trigger_keys_{fcitx::Key(FcitxKey_Control_R)};
   fcitx::KeyList command_keys_{fcitx::Key(FcitxKey_F10)};
   fcitx::KeyList scene_menu_key_{fcitx::Key(FcitxKey_F9)};
+  fcitx::KeyList model_menu_key_{fcitx::Key(FcitxKey_F8)};
   fcitx::KeyList page_prev_keys_{
       fcitx::Key(FcitxKey_Page_Up),
       fcitx::Key(FcitxKey_KP_Page_Up),
@@ -104,8 +112,11 @@ private:
   };
   bool scene_menu_visible_ = false;
   bool result_menu_visible_ = false;
+  bool model_menu_visible_ = false;
   std::string active_scene_id_;
+  std::string active_model_name_;
   vinput::scene::Config scene_config_;
+  std::vector<ModelSummary> model_list_;
   std::vector<vinput::result::Candidate> result_candidates_;
   bool result_is_command_ = false;
   std::chrono::steady_clock::time_point last_trigger_time_;

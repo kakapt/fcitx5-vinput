@@ -2,6 +2,9 @@
 #include "common/core_config.h"
 #include "common/i18n.h"
 #include "common/postprocess_scene.h"
+#include "common/model_manager.h"
+#include "common/string_utils.h"
+#include "common/process_utils.h"
 
 #include <fcitx/candidatelist.h>
 #include <fcitx/inputcontext.h>
@@ -20,7 +23,15 @@ struct SceneOption {
   std::string label;
 };
 
+struct ModelOption {
+  std::size_t index;
+  std::string name;
+  std::string display_info;
+};
+
 std::string SceneMenuTitle() { return _("Choose Postprocess Menu"); }
+
+std::string ModelMenuTitle() { return _("Choose Model"); }
 
 std::string ResultMenuTitle(std::size_t count) {
   char buf[128];
@@ -167,6 +178,23 @@ public:
 
   void select(fcitx::InputContext *inputContext) const override {
     engine_->selectScene(index_, inputContext);
+  }
+
+private:
+  VinputEngine *engine_;
+  std::size_t index_;
+};
+
+class ModelCandidateWord : public fcitx::CandidateWord {
+public:
+  ModelCandidateWord(VinputEngine *engine, ModelOption option, bool active)
+      : fcitx::CandidateWord(fcitx::Text(DisplayTextWithComment(
+            option.name + " - " + option.display_info, 
+            active ? _(" (Current)") : std::string()))),
+        engine_(engine), index_(option.index) {}
+
+  void select(fcitx::InputContext *inputContext) const override {
+    engine_->selectModel(index_, inputContext);
   }
 
 private:
@@ -364,6 +392,218 @@ void VinputEngine::selectScene(std::size_t index, fcitx::InputContext *ic) {
   active_scene_id_ = selected_scene_id;
   scene_config_.activeSceneId = selected_scene_id;
   hideSceneMenu();
+  (void)ic;
+}
+
+void VinputEngine::reloadModelList() {
+  auto core_config = LoadCoreConfig();
+  auto base_dir = ResolveModelBaseDir(core_config);
+  const std::string active_model = ResolvePreferredLocalModel(core_config);
+  
+  ModelManager mgr(base_dir.string());
+  model_list_ = mgr.ListDetailed(active_model);
+  active_model_name_ = active_model;
+}
+
+void VinputEngine::showModelMenu(fcitx::InputContext *ic) {
+  if (!ic) {
+    return;
+  }
+
+  reloadModelList();
+  model_menu_ic_ = ic;
+  model_menu_visible_ = true;
+
+  auto candidate_list = std::make_unique<fcitx::CommonCandidateList>();
+  candidate_list->setPageSize(kMenuPageSize);
+  candidate_list->setLayoutHint(fcitx::CandidateLayoutHint::Vertical);
+  candidate_list->setCursorPositionAfterPaging(
+      fcitx::CursorPositionAfterPaging::ResetToFirst);
+
+  int active_index = 0;
+  for (std::size_t i = 0; i < model_list_.size(); ++i) {
+    const auto &model = model_list_[i];
+    const bool active = model.state == ModelState::Active;
+    if (active) {
+      active_index = static_cast<int>(i);
+    }
+    
+    std::string display_info = model.model_type + " (" + model.language + ")";
+    candidate_list->append<ModelCandidateWord>(
+        this,
+        ModelOption{
+            .index = i,
+            .name = model.name,
+            .display_info = display_info,
+        },
+        active);
+  }
+  MoveCursorToIndex(candidate_list.get(), active_index);
+
+  SetMenuTitle(ic, ModelMenuTitle(), candidate_list.get());
+  ic->inputPanel().setCandidateList(std::move(candidate_list));
+  ic->updateUserInterface(fcitx::UserInterfaceComponent::InputPanel);
+}
+
+void VinputEngine::hideModelMenu() {
+  if (!model_menu_visible_ || !model_menu_ic_) {
+    model_menu_visible_ = false;
+    model_menu_ic_ = nullptr;
+    return;
+  }
+
+  model_menu_visible_ = false;
+  fcitx::Text empty;
+  model_menu_ic_->inputPanel().setAuxUp(empty);
+  model_menu_ic_->inputPanel().setCandidateList({});
+  model_menu_ic_->updateUserInterface(
+      fcitx::UserInterfaceComponent::InputPanel);
+  model_menu_ic_ = nullptr;
+}
+
+bool VinputEngine::handleModelMenuKeyEvent(fcitx::KeyEvent &keyEvent) {
+  if (!model_menu_visible_ || !model_menu_ic_) {
+    return false;
+  }
+
+  auto candidate_list = model_menu_ic_->inputPanel().candidateList();
+  auto *cursor_list =
+      candidate_list ? candidate_list->toCursorMovable() : nullptr;
+  if (keyEvent.isRelease()) {
+    if (keyEvent.key().checkKeyList(model_menu_key_) ||
+        keyEvent.key().checkKeyList(page_prev_keys_) ||
+        keyEvent.key().checkKeyList(page_next_keys_) ||
+        keyEvent.key().digitSelection() >= 0 ||
+        keyEvent.key().check(FcitxKey_Up) ||
+        keyEvent.key().check(FcitxKey_Down) ||
+        keyEvent.key().check(FcitxKey_Return) ||
+        keyEvent.key().check(FcitxKey_KP_Enter) ||
+        keyEvent.key().check(FcitxKey_Escape)) {
+      keyEvent.filterAndAccept();
+      return true;
+    }
+    return false;
+  }
+
+  if (keyEvent.key().checkKeyList(model_menu_key_)) {
+    keyEvent.filterAndAccept();
+    return true;
+  }
+
+  if (keyEvent.key().check(FcitxKey_Escape)) {
+    hideModelMenu();
+    keyEvent.filterAndAccept();
+    return true;
+  }
+
+  if (keyEvent.key().checkKeyList(page_prev_keys_)) {
+    ChangeCandidatePage(model_menu_ic_, ModelMenuTitle(), false);
+    keyEvent.filterAndAccept();
+    return true;
+  }
+
+  if (keyEvent.key().checkKeyList(page_next_keys_)) {
+    ChangeCandidatePage(model_menu_ic_, ModelMenuTitle(), true);
+    keyEvent.filterAndAccept();
+    return true;
+  }
+
+  const int digit = keyEvent.key().digitSelection();
+  const int digit_index = DigitSelectionIndex(candidate_list.get(), digit);
+  if (digit >= 0 &&
+      digit_index < static_cast<int>(model_list_.size())) {
+    selectModel(static_cast<std::size_t>(digit_index), model_menu_ic_);
+    keyEvent.filterAndAccept();
+    return true;
+  }
+
+  if (cursor_list && keyEvent.key().check(FcitxKey_Up)) {
+    cursor_list->prevCandidate();
+    model_menu_ic_->updateUserInterface(
+        fcitx::UserInterfaceComponent::InputPanel);
+    keyEvent.filterAndAccept();
+    return true;
+  }
+
+  if (cursor_list && keyEvent.key().check(FcitxKey_Down)) {
+    cursor_list->nextCandidate();
+    model_menu_ic_->updateUserInterface(
+        fcitx::UserInterfaceComponent::InputPanel);
+    keyEvent.filterAndAccept();
+    return true;
+  }
+
+  if (keyEvent.key().check(FcitxKey_Return) ||
+      keyEvent.key().check(FcitxKey_KP_Enter)) {
+    int index = CurrentSelectionIndex(candidate_list.get());
+    if (index < 0) {
+      for (std::size_t i = 0; i < model_list_.size(); ++i) {
+        if (model_list_[i].state == ModelState::Active) {
+          index = static_cast<int>(i);
+          break;
+        }
+      }
+    }
+    if (index >= 0 && index < static_cast<int>(model_list_.size())) {
+      selectModel(static_cast<std::size_t>(index), model_menu_ic_);
+    } else {
+      hideModelMenu();
+    }
+    keyEvent.filterAndAccept();
+    return true;
+  }
+
+  hideModelMenu();
+  return false;
+}
+
+void VinputEngine::selectModel(std::size_t index, fcitx::InputContext *ic) {
+  if (index >= model_list_.size()) {
+    hideModelMenu();
+    return;
+  }
+
+  const std::string selected_model_name = model_list_[index].name;
+
+  auto core_config = LoadCoreConfig();
+  std::string error;
+  if (!SetPreferredLocalModel(&core_config, selected_model_name, &error)) {
+    notifyError(_("Failed to set active model: ") + error);
+    return;
+  }
+  if (!SaveCoreConfig(core_config)) {
+    notifyError(_("Failed to save model configuration."));
+    return;
+  }
+
+  vinput::process::CommandSpec restart_spec;
+  restart_spec.command = "vinput";
+  restart_spec.args = {"daemon", "restart"};
+  restart_spec.timeout_ms = 10000;
+
+  const auto result = vinput::process::RunCommandWithInput(restart_spec, {});
+  
+  if (result.launch_failed) {
+    notifyError(vinput::str::FmtStr(
+        _("Active model set to '%s', but failed to launch daemon restart command. %s"),
+        selected_model_name, result.stderr_text));
+  } else if (result.timed_out) {
+    notifyError(vinput::str::FmtStr(
+        _("Active model set to '%s', but daemon restart timed out after 10 seconds."),
+        selected_model_name));
+  } else if (result.exit_code != 0) {
+    std::string error_msg = vinput::str::FmtStr(
+        _("Active model set to '%s', but daemon restart failed (exit code: %d)."), 
+        selected_model_name, result.exit_code);
+    if (!result.stderr_text.empty()) {
+      error_msg += std::string(" ") + _("Error: ") + result.stderr_text;
+    }
+    error_msg += std::string(" ") + _("Restart the daemon manually to apply the new model.");
+    notifyError(error_msg);
+  }
+
+  active_model_name_ = selected_model_name;
+  hideModelMenu();
   (void)ic;
 }
 

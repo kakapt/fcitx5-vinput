@@ -37,6 +37,10 @@ void VinputEngine::handleKeyEvent(fcitx::Event &event) {
     return;
   }
 
+  if (model_menu_visible_ && handleModelMenuKeyEvent(keyEvent)) {
+    return;
+  }
+
   if (!session_ && keyEvent.key().checkKeyList(scene_menu_key_) &&
       !keyEvent.isRelease()) {
     showSceneMenu(keyEvent.inputContext());
@@ -44,7 +48,19 @@ void VinputEngine::handleKeyEvent(fcitx::Event &event) {
     return;
   }
 
+  if (!session_ && keyEvent.key().checkKeyList(model_menu_key_) &&
+      !keyEvent.isRelease()) {
+    showModelMenu(keyEvent.inputContext());
+    keyEvent.filterAndAccept();
+    return;
+  }
+
   if (keyEvent.key().checkKeyList(scene_menu_key_) && keyEvent.isRelease()) {
+    keyEvent.filterAndAccept();
+    return;
+  }
+
+  if (keyEvent.key().checkKeyList(model_menu_key_) && keyEvent.isRelease()) {
     keyEvent.filterAndAccept();
     return;
   }
