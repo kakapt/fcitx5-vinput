@@ -6,13 +6,12 @@ arch=('x86_64')
 url='@VINPUT_PKGURL@'
 license=('GPL3')
 options=(!debug)
-depends=('curl' 'fcitx5' 'libarchive' 'openssl' 'pipewire' 'qt6-base' 'systemd-libs')
+depends=('curl' 'fcitx5' 'libarchive' 'openssl' 'pipewire' 'qt6-base' 'systemd-libs' 'vosk-api')
 makedepends=('clang' 'cli11' 'cmake' 'mold' 'ninja' 'nlohmann-json' 'pkgconf' 'qt6-tools' 'systemd')
 source=('@VINPUT_SOURCE_ARCHIVE@')
 sha256sums=('@VINPUT_SOURCE_SHA256@')
 
 _sherpa_onnx_ver=@SHERPA_ONNX_VERSION@
-_vosk_ver=@VOSK_VERSION@
 
 build() {
     local src_root="${srcdir}/${pkgname}-${pkgver}"
@@ -23,10 +22,6 @@ build() {
     bash "${src_root}/scripts/build-sherpa-onnx.sh" \
         "${_sherpa_onnx_ver}" "${srcdir}/sherpa-onnx-install"
 
-    # Install pre-built vosk for the package build.
-    bash "${src_root}/scripts/build-vosk.sh" \
-        "${_vosk_ver}" "${srcdir}/sherpa-onnx-install"
-
     cmake -S "${src_root}" -B "${srcdir}/build" \
         -DCMAKE_BUILD_TYPE=None \
         -DCMAKE_INSTALL_PREFIX=/usr \
@@ -36,7 +31,8 @@ build() {
         -DCMAKE_MODULE_LINKER_FLAGS=-fuse-ld=mold \
         -DVINPUT_PROJECT_VERSION="${pkgver}" \
         -DVINPUT_PACKAGE_RELEASE="${pkgrel}" \
-        -DVINPUT_PACKAGE_HOMEPAGE_URL="${url}"
+        -DVINPUT_PACKAGE_HOMEPAGE_URL="${url}" \
+        -DVINPUT_VOSK_RUNTIME_MODE=system
     cmake --build "${srcdir}/build"
 }
 

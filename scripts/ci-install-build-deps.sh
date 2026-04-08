@@ -120,7 +120,8 @@ case "${target}" in
             systemd-devel \
             fcitx5-devel \
             nlohmann-json-devel \
-            cli11-devel
+            cli11-devel \
+            vosk-api-devel
         install_qt_dnf
         ;;
     archlinux)
@@ -139,7 +140,8 @@ case "${target}" in
             pipewire \
             pkgconf \
             sccache \
-            systemd
+            systemd \
+            vosk-api
         install_qt_pacman
         ;;
     *)
