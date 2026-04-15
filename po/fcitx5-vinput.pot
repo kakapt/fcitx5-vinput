@@ -885,6 +885,36 @@ msgstr ""
 msgid "Print this help message and exit"
 msgstr ""
 
+msgid "Display program version information and exit"
+msgstr ""
+
+msgid "Usage"
+msgstr ""
+
+msgid "OPTIONS"
+msgstr ""
+
+msgid "SUBCOMMAND"
+msgstr ""
+
+msgid "SUBCOMMANDS"
+msgstr ""
+
+msgid "Positionals"
+msgstr ""
+
+msgid "REQUIRED"
+msgstr ""
+
+msgid "Env"
+msgstr ""
+
+msgid "Needs"
+msgstr ""
+
+msgid "Excludes"
+msgstr ""
+
 msgid "Output in JSON format"
 msgstr ""
 

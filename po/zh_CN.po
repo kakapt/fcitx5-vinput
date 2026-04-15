@@ -898,6 +898,36 @@ msgstr "vinput - 语音输入管理器"
 msgid "Print this help message and exit"
 msgstr "显示此帮助信息并退出"
 
+msgid "Display program version information and exit"
+msgstr "显示程序版本信息并退出"
+
+msgid "Usage"
+msgstr "用法"
+
+msgid "OPTIONS"
+msgstr "选项"
+
+msgid "SUBCOMMAND"
+msgstr "子命令"
+
+msgid "SUBCOMMANDS"
+msgstr "子命令"
+
+msgid "Positionals"
+msgstr "位置参数"
+
+msgid "REQUIRED"
+msgstr "必填"
+
+msgid "Env"
+msgstr "环境变量"
+
+msgid "Needs"
+msgstr "依赖"
+
+msgid "Excludes"
+msgstr "互斥"
+
 msgid "Output in JSON format"
 msgstr "以 JSON 格式输出"
 
