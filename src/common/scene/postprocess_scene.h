@@ -11,7 +11,6 @@ constexpr int kMaxCandidateCount = 9;
 constexpr int kDefaultCandidateCount = 1;
 constexpr int kDefaultTimeoutMs = 4000;
 constexpr int kDefaultContextLines = 0;
-constexpr int kMaxContextLines = 50;
 constexpr std::string_view kRawSceneId = "__raw__";
 constexpr std::string_view kCommandSceneId = "__command__";
 constexpr std::string_view kRawSceneLabelKey = "__label_raw__";

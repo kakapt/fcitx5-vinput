@@ -223,6 +223,14 @@ void VinputEngine::reloadSceneConfig() {
   scene_config_.activeSceneId = core_config.scenes.activeScene;
   scene_config_.scenes = core_config.scenes.definitions;
   active_scene_id_ = scene_config_.activeSceneId;
+
+  int max_cl = 0;
+  for (const auto &s : scene_config_.scenes) {
+    if (s.context_lines > max_cl) {
+      max_cl = s.context_lines;
+    }
+  }
+  max_context_lines_ = max_cl;
 }
 
 void VinputEngine::rebuildUiConfig() const {
@@ -280,8 +288,8 @@ void VinputEngine::appendContextEntry(const std::string &text,
   }
 
   constexpr int kTruncateInterval = 100;
-  constexpr int kKeepLines = 200;
-  if (++commit_write_count_ >= kTruncateInterval) {
+  const int keep_lines = max_context_lines_ > 0 ? max_context_lines_ : 0;
+  if (keep_lines > 0 && ++commit_write_count_ >= kTruncateInterval) {
     commit_write_count_ = 0;
     std::ifstream ifs(path);
     if (!ifs) {
@@ -295,8 +303,8 @@ void VinputEngine::appendContextEntry(const std::string &text,
       }
     }
     ifs.close();
-    if (static_cast<int>(lines.size()) > kKeepLines) {
-      const auto start = lines.end() - kKeepLines;
+    if (static_cast<int>(lines.size()) > keep_lines) {
+      const auto start = lines.end() - keep_lines;
       const auto tmp = path.string() + ".tmp";
       std::ofstream ofs_tmp(tmp, std::ios::trunc);
       if (ofs_tmp) {

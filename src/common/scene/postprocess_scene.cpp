@@ -75,8 +75,6 @@ void NormalizeDefinition(Definition *scene) {
   }
   if (scene->context_lines < 0) {
     scene->context_lines = 0;
-  } else if (scene->context_lines > kMaxContextLines) {
-    scene->context_lines = kMaxContextLines;
   }
 }
 

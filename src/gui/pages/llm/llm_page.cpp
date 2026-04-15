@@ -612,7 +612,7 @@ void LlmPage::onSceneAdd() {
   spinCandidates->setRange(kMinCandidateCount, kMaxCandidateCount);
   spinCandidates->setValue(kDefaultCandidateCount);
   auto *spinContextLines = new QSpinBox();
-  spinContextLines->setRange(0, vinput::scene::kMaxContextLines);
+  spinContextLines->setRange(0, 9999);
   spinContextLines->setValue(vinput::scene::kDefaultContextLines);
 
   SetupProviderModelCombos(comboProvider, comboModel);
@@ -697,7 +697,7 @@ void LlmPage::onSceneEdit() {
   spinCandidates->setRange(kMinCandidateCount, kMaxCandidateCount);
   spinCandidates->setValue(found->candidate_count);
   auto *spinContextLines = new QSpinBox();
-  spinContextLines->setRange(0, vinput::scene::kMaxContextLines);
+  spinContextLines->setRange(0, 9999);
   spinContextLines->setValue(found->context_lines);
 
   SetupProviderModelCombos(comboProvider, comboModel,

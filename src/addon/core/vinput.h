@@ -171,6 +171,7 @@ private:
   std::string context_buffer_text_;
   fcitx::InputContext *context_buffer_ic_ = nullptr;
   std::unique_ptr<fcitx::EventSourceTime> context_flush_timer_;
+  int max_context_lines_ = 0;
   std::vector<vinput::result::Candidate> result_candidates_;
   bool result_is_command_ = false;
   std::chrono::steady_clock::time_point last_trigger_time_;
