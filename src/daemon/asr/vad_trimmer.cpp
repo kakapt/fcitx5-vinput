@@ -10,7 +10,7 @@ VadTrimmer::VadTrimmer() = default;
 VadTrimmer::~VadTrimmer() { Shutdown(); }
 
 bool VadTrimmer::Init(const std::string &model_path, int sample_rate,
-                      std::string *error) {
+                      const std::string &provider, std::string *error) {
   if (vad_) return true;
 
   SherpaOnnxVadModelConfig config = {};
@@ -22,7 +22,7 @@ bool VadTrimmer::Init(const std::string &model_path, int sample_rate,
   config.silero_vad.max_speech_duration = 0.0f;
   config.sample_rate = sample_rate;
   config.num_threads = 1;
-  config.provider = "cpu";
+  config.provider = provider.c_str();
   config.debug = 0;
 
   vad_ = SherpaOnnxCreateVoiceActivityDetector(&config, 30.0f);

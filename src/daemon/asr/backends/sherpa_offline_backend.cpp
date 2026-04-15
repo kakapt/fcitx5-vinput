@@ -509,8 +509,11 @@ private:
       return false;
 
     if (asr_config_.vad_enabled && !asr_config_.vad_model_path.empty()) {
+      const std::string vad_provider =
+          JsonString(model_info_.model_config, "provider", "cpu");
       std::string vad_error;
-      if (!vad_.Init(asr_config_.vad_model_path, 16000, &vad_error)) {
+      if (!vad_.Init(asr_config_.vad_model_path, 16000, vad_provider,
+                     &vad_error)) {
         fprintf(stderr, "vinput: %s, continuing without VAD\n",
                 vad_error.empty() ? "VAD model not available"
                                   : vad_error.c_str());

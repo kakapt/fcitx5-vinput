@@ -15,6 +15,7 @@ public:
 
   // Load silero_vad.onnx from `model_path`. Returns true on success.
   bool Init(const std::string &model_path, int sample_rate = 16000,
+            const std::string &provider = "cpu",
             std::string *error = nullptr);
 
   // Extract speech segments, concatenated. Returns empty if no speech found.
