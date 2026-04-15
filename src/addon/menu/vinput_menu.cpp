@@ -1294,7 +1294,7 @@ void VinputEngine::selectResultCandidate(std::size_t index,
     return;
   }
 
-  const auto &candidate = result_candidates_[index];
+  const auto candidate = result_candidates_[index];
   const std::string text = candidate.text;
   const bool is_command_result = result_is_command_;
   hideResultMenu();
@@ -1320,6 +1320,10 @@ void VinputEngine::selectResultCandidate(std::size_t index,
         ic->deleteSurroundingText(from - cursor, len);
       }
     }
+    if (candidate.source == vinput::result::kSourceLlm) {
+      appendContextEntry(text, "llm");
+    }
+    suppressNextCommitContext(text);
     clearPreedit(ic);
     ic->commitString(text);
   }

@@ -108,6 +108,8 @@ private:
   resolveFrontendInputContext(fcitx::InputContext *fallback_ic = nullptr) const;
   void updatePreedit(fcitx::InputContext *ic, const std::string &text);
   void clearPreedit(fcitx::InputContext *ic);
+  void appendContextEntry(const std::string &text, const char *source);
+  void suppressNextCommitContext(const std::string &text);
   void onCommitString(const std::string &text);
 
   fcitx::Instance *instance_;
@@ -162,6 +164,8 @@ private:
   std::vector<std::size_t> asr_menu_filtered_indices_;
   std::string asr_menu_query_;
   bool asr_menu_filter_mode_ = false;
+  std::optional<std::string> pending_suppressed_commit_text_;
+  std::string command_selected_text_;
   std::vector<vinput::result::Candidate> result_candidates_;
   bool result_is_command_ = false;
   std::chrono::steady_clock::time_point last_trigger_time_;

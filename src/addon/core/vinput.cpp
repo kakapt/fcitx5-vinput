@@ -12,6 +12,8 @@
 #include <fcitx-utils/event.h>
 #include <fcitx/inputcontext.h>
 
+#include <chrono>
+#include <cstdint>
 #include <fstream>
 #include <string>
 
@@ -20,6 +22,15 @@
 using namespace vinput::dbus;
 
 namespace {
+
+constexpr const char *kContextSourceUser = "user";
+
+int64_t CurrentUnixTimestamp() {
+  return std::chrono::duration_cast<std::chrono::seconds>(
+             std::chrono::system_clock::now().time_since_epoch())
+      .count();
+}
+
 // Auto-install systemd service when running inside a sandbox.
 void ensureDaemonServiceInstalled() {
   if (!vinput::sandbox::IsInSandbox())
@@ -231,7 +242,8 @@ fcitx::InputContext *VinputEngine::resolveFrontendInputContext(
   return last_active_ic_;
 }
 
-void VinputEngine::onCommitString(const std::string &text) {
+void VinputEngine::appendContextEntry(const std::string &text,
+                                      const char *source) {
   if (text.empty()) {
     return;
   }
@@ -244,6 +256,8 @@ void VinputEngine::onCommitString(const std::string &text) {
 
   nlohmann::json entry;
   entry["text"] = text;
+  entry["source"] = source ? source : kContextSourceUser;
+  entry["timestamp"] = CurrentUnixTimestamp();
   {
     std::ofstream ofs(path, std::ios::app);
     if (ofs) {
@@ -281,6 +295,28 @@ void VinputEngine::onCommitString(const std::string &text) {
       }
     }
   }
+}
+
+void VinputEngine::suppressNextCommitContext(const std::string &text) {
+  if (text.empty()) {
+    pending_suppressed_commit_text_.reset();
+    return;
+  }
+  pending_suppressed_commit_text_ = text;
+}
+
+void VinputEngine::onCommitString(const std::string &text) {
+  if (text.empty()) {
+    return;
+  }
+  if (pending_suppressed_commit_text_) {
+    const bool suppressed = *pending_suppressed_commit_text_ == text;
+    pending_suppressed_commit_text_.reset();
+    if (suppressed) {
+      return;
+    }
+  }
+  appendContextEntry(text, kContextSourceUser);
 }
 
 fcitx::AddonInstance *

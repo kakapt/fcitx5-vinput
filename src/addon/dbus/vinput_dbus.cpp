@@ -332,6 +332,7 @@ void VinputEngine::setupDBusWatcher() {
 }
 
 bool VinputEngine::callStartRecording() {
+  command_selected_text_.clear();
   if (!bus_ || !daemonSyncAllowed()) {
     noteDaemonSyncFailure();
     return false;
@@ -367,6 +368,7 @@ bool VinputEngine::callStartRecording() {
 }
 
 bool VinputEngine::callStartCommandRecording(const std::string &selected_text) {
+  command_selected_text_ = selected_text;
   if (!bus_ || !daemonSyncAllowed()) {
     noteDaemonSyncFailure();
     return false;
@@ -567,6 +569,7 @@ void VinputEngine::enterBusyState(fcitx::InputContext *ic, bool command_mode,
 void VinputEngine::finishFrontendSession(fcitx::InputContext *fallback_ic) {
   auto *ic = session_ ? session_->ic : (fallback_ic ? fallback_ic : status_ic_);
   session_.reset();
+  command_selected_text_.clear();
   if (status_ic_ == ic) {
     status_ic_ = nullptr;
   }
@@ -781,6 +784,8 @@ void VinputEngine::onRecognitionResult(fcitx::dbus::Message &msg) {
 
   const bool has_session = session_.has_value();
   const bool is_command = has_session && session_->command_mode;
+  const std::string command_selected_text =
+      is_command ? command_selected_text_ : std::string{};
   auto *ic = resolveFrontendInputContext();
 
   if (!ic) {
@@ -798,10 +803,36 @@ void VinputEngine::onRecognitionResult(fcitx::dbus::Message &msg) {
     return;
   }
 
+  const vinput::result::Candidate *asr_candidate = nullptr;
+  for (const auto &candidate : payload.candidates) {
+    if (candidate.source == vinput::result::kSourceAsr) {
+      asr_candidate = &candidate;
+      break;
+    }
+  }
+  if (!asr_candidate) {
+    for (const auto &candidate : payload.candidates) {
+      if (candidate.source != vinput::result::kSourceRaw) {
+        continue;
+      }
+      if (!is_command || candidate.text != command_selected_text) {
+        asr_candidate = &candidate;
+        break;
+      }
+    }
+  }
+  if (asr_candidate && !asr_candidate->text.empty()) {
+    appendContextEntry(asr_candidate->text, "asr");
+  }
+
   int llm_count = 0;
+  bool commit_from_llm = false;
   for (const auto &c : payload.candidates) {
     if (c.source == vinput::result::kSourceLlm)
       ++llm_count;
+    if (c.source == vinput::result::kSourceLlm && c.text == payload.commitText) {
+      commit_from_llm = true;
+    }
   }
   if (llm_count > 1) {
     // Save command mode for result menu interaction
@@ -809,6 +840,11 @@ void VinputEngine::onRecognitionResult(fcitx::dbus::Message &msg) {
     showResultMenu(ic, payload);
     return;
   }
+
+  if (commit_from_llm) {
+    appendContextEntry(payload.commitText, "llm");
+  }
+  suppressNextCommitContext(payload.commitText);
 
   if (is_command) {
     auto &surrounding = ic->surroundingText();
