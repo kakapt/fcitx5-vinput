@@ -770,6 +770,9 @@ msgstr "候选数量"
 msgid "Request timeout in milliseconds"
 msgstr "请求超时时间（毫秒）"
 
+msgid "Number of previous lines sent as LLM context"
+msgstr "发送给 LLM 作为上下文的前文行数"
+
 msgid "Set active scene"
 msgstr "设置当前场景"
 

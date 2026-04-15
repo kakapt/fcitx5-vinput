@@ -23,6 +23,7 @@ int RunSceneConfigList(Formatter &fmt, const CliContext &ctx) {
                      {"model", scene.model},
                      {"candidate_count", scene.candidate_count},
                      {"timeout_ms", scene.timeout_ms},
+                     {"context_lines", scene.context_lines},
                      {"builtin", scene.builtin},
                      {"active", active}});
     }
@@ -51,7 +52,7 @@ int RunSceneConfigAdd(const std::string &id, const std::string &label,
                       const std::string &prompt,
                       const std::string &provider_id,
                       const std::string &model, int candidate_count,
-                      int timeout_ms, Formatter &fmt,
+                      int timeout_ms, int context_lines, Formatter &fmt,
                       const CliContext &ctx) {
   (void)ctx;
   CoreConfig config = LoadCoreConfig();
@@ -64,6 +65,7 @@ int RunSceneConfigAdd(const std::string &id, const std::string &label,
   def.model = model;
   def.candidate_count = candidate_count;
   def.timeout_ms = timeout_ms;
+  def.context_lines = context_lines;
 
   vinput::scene::Config scene_config = ToSceneConfig(config.scenes);
   std::string error;
@@ -124,9 +126,10 @@ int RunSceneConfigEdit(const std::string &id, const std::string &label,
                        const std::string &prompt,
                        const std::string &provider_id,
                        const std::string &model, int candidate_count,
-                       int timeout_ms, bool hasLabel, bool hasPrompt,
-                       bool hasProvider, bool hasModel, bool hasCandidates,
-                       bool hasTimeout, Formatter &fmt,
+                       int timeout_ms, int context_lines, bool hasLabel,
+                       bool hasPrompt, bool hasProvider, bool hasModel,
+                       bool hasCandidates, bool hasTimeout,
+                       bool hasContextLines, Formatter &fmt,
                        const CliContext &ctx) {
   (void)ctx;
   CoreConfig config = LoadCoreConfig();
@@ -150,6 +153,7 @@ int RunSceneConfigEdit(const std::string &id, const std::string &label,
   if (hasModel) updated.model = model;
   if (hasCandidates) updated.candidate_count = candidate_count;
   if (hasTimeout) updated.timeout_ms = timeout_ms;
+  if (hasContextLines) updated.context_lines = context_lines;
 
   vinput::scene::Config scene_config = ToSceneConfig(config.scenes);
   std::string error;

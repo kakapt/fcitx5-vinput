@@ -757,6 +757,9 @@ msgstr ""
 msgid "Request timeout in milliseconds"
 msgstr ""
 
+msgid "Number of previous lines sent as LLM context"
+msgstr ""
+
 msgid "Set active scene"
 msgstr ""
 

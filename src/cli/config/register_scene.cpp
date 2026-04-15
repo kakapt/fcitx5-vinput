@@ -29,6 +29,7 @@ void RegisterSceneCommands(CLI::App &app, CliAction *action) {
     std::string model;
     int candidates = vinput::scene::kDefaultCandidateCount;
     int timeoutMs = vinput::scene::kDefaultTimeoutMs;
+    int contextLines = vinput::scene::kDefaultContextLines;
   };
   auto addState = std::make_shared<AddState>();
   auto *add = scene->add_subcommand("add", _("Add a new scene"));
@@ -42,12 +43,16 @@ void RegisterSceneCommands(CLI::App &app, CliAction *action) {
   add->add_option("--timeout", addState->timeoutMs,
                   _("Request timeout in milliseconds"))
       ->default_val(vinput::scene::kDefaultTimeoutMs);
+  add->add_option("--context-lines", addState->contextLines,
+                  _("Number of previous lines sent as LLM context"))
+      ->default_val(vinput::scene::kDefaultContextLines);
   add->callback([action, addState]() {
     *action = [addState](Formatter &fmt, const CliContext &ctx) {
       return RunSceneConfigAdd(addState->id, addState->label,
                                addState->prompt, addState->providerId,
                                addState->model, addState->candidates,
-                               addState->timeoutMs, fmt, ctx);
+                               addState->timeoutMs, addState->contextLines,
+                               fmt, ctx);
     };
   });
 
@@ -78,12 +83,14 @@ void RegisterSceneCommands(CLI::App &app, CliAction *action) {
     std::string model;
     int candidates = vinput::scene::kDefaultCandidateCount;
     int timeoutMs = vinput::scene::kDefaultTimeoutMs;
+    int contextLines = vinput::scene::kDefaultContextLines;
     bool hasLabel = false;
     bool hasPrompt = false;
     bool hasProvider = false;
     bool hasModel = false;
     bool hasCandidates = false;
     bool hasTimeout = false;
+    bool hasContextLines = false;
   };
   auto editState = std::make_shared<EditState>();
   auto *edit = scene->add_subcommand("edit", _("Edit a scene"));
@@ -95,20 +102,24 @@ void RegisterSceneCommands(CLI::App &app, CliAction *action) {
   auto *eMdl = edit->add_option("-m,--model", editState->model, _("LLM model id"));
   auto *eCnd = edit->add_option("-c,--candidates", editState->candidates, _("Candidate count"));
   auto *eTmo = edit->add_option("--timeout", editState->timeoutMs, _("Request timeout in milliseconds"));
-  edit->callback([action, editState, eLbl, ePmt, ePrv, eMdl, eCnd, eTmo]() {
+  auto *eCtx = edit->add_option("--context-lines", editState->contextLines,
+                                _("Number of previous lines sent as LLM context"));
+  edit->callback([action, editState, eLbl, ePmt, ePrv, eMdl, eCnd, eTmo, eCtx]() {
     editState->hasLabel = eLbl->count() > 0;
     editState->hasPrompt = ePmt->count() > 0;
     editState->hasProvider = ePrv->count() > 0;
     editState->hasModel = eMdl->count() > 0;
     editState->hasCandidates = eCnd->count() > 0;
     editState->hasTimeout = eTmo->count() > 0;
+    editState->hasContextLines = eCtx->count() > 0;
     *action = [editState](Formatter &fmt, const CliContext &ctx) {
       return RunSceneConfigEdit(
           editState->id, editState->label, editState->prompt,
           editState->providerId, editState->model, editState->candidates,
-          editState->timeoutMs, editState->hasLabel, editState->hasPrompt,
-          editState->hasProvider, editState->hasModel,
-          editState->hasCandidates, editState->hasTimeout, fmt, ctx);
+          editState->timeoutMs, editState->contextLines, editState->hasLabel,
+          editState->hasPrompt, editState->hasProvider,
+          editState->hasModel, editState->hasCandidates,
+          editState->hasTimeout, editState->hasContextLines, fmt, ctx);
     };
   });
 }

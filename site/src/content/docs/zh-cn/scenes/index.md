@@ -122,6 +122,7 @@ vinput scene add --id polish \
   --label "润色" \
   --provider ollama \
   --model qwen2.5:7b \
+  --context-lines 3 \
   --prompt "将识别结果润色为自然的中文。"
 vinput scene use polish
 ```

@@ -122,6 +122,7 @@ vinput scene add --id polish \
   --label "Polish" \
   --provider ollama \
   --model qwen2.5:7b \
+  --context-lines 3 \
   --prompt "Rewrite the recognized text into polished Chinese."
 vinput scene use polish
 ```
