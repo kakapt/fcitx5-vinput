@@ -53,4 +53,56 @@ inline std::string TrimAsciiWhitespace(std::string_view text) {
     return std::string(text.substr(begin, end - begin));
 }
 
+inline bool IsCjkCodepoint(uint32_t cp) { return cp >= 0x2E80; }
+
+inline uint32_t FirstUtf8Codepoint(std::string_view s) {
+    if (s.empty())
+        return 0;
+    auto c = static_cast<unsigned char>(s[0]);
+    if (c < 0x80)
+        return c;
+    uint32_t cp = 0;
+    int len = 0;
+    if ((c & 0xE0) == 0xC0) {
+        cp = c & 0x1F;
+        len = 2;
+    } else if ((c & 0xF0) == 0xE0) {
+        cp = c & 0x0F;
+        len = 3;
+    } else if ((c & 0xF8) == 0xF0) {
+        cp = c & 0x07;
+        len = 4;
+    } else {
+        return c;
+    }
+    for (int i = 1; i < len && static_cast<size_t>(i) < s.size(); ++i) {
+        cp = (cp << 6) | (static_cast<unsigned char>(s[i]) & 0x3F);
+    }
+    return cp;
+}
+
+inline uint32_t LastUtf8Codepoint(std::string_view s) {
+    if (s.empty())
+        return 0;
+    auto i = s.size();
+    while (i > 0 && (static_cast<unsigned char>(s[i - 1]) & 0xC0) == 0x80) {
+        --i;
+    }
+    if (i == 0)
+        return 0;
+    return FirstUtf8Codepoint(s.substr(i - 1));
+}
+
+inline bool IsSentenceEndingPunctuation(uint32_t cp) {
+    // CJK sentence enders: 。！？…
+    if (cp == 0x3002 || cp == 0xFF01 || cp == 0xFF1F || cp == 0x2026)
+        return true;
+    // Latin sentence enders
+    if (cp == '.' || cp == '!' || cp == '?')
+        return true;
+    if (cp == '\n')
+        return true;
+    return false;
+}
+
 } // namespace vinput::str

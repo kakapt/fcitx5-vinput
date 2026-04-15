@@ -109,8 +109,10 @@ private:
   void updatePreedit(fcitx::InputContext *ic, const std::string &text);
   void clearPreedit(fcitx::InputContext *ic);
   void appendContextEntry(const std::string &text, const char *source);
+  void flushContextBuffer();
+  void accumulateContextBuffer(const std::string &text, fcitx::InputContext *ic);
   void suppressNextCommitContext(const std::string &text);
-  void onCommitString(const std::string &text);
+  void onCommitString(const std::string &text, fcitx::InputContext *ic);
 
   fcitx::Instance *instance_;
   fcitx::EventDispatcher event_dispatcher_;
@@ -166,6 +168,9 @@ private:
   bool asr_menu_filter_mode_ = false;
   std::optional<std::string> pending_suppressed_commit_text_;
   std::string command_selected_text_;
+  std::string context_buffer_text_;
+  fcitx::InputContext *context_buffer_ic_ = nullptr;
+  std::unique_ptr<fcitx::EventSourceTime> context_flush_timer_;
   std::vector<vinput::result::Candidate> result_candidates_;
   bool result_is_command_ = false;
   std::chrono::steady_clock::time_point last_trigger_time_;

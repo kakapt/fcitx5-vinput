@@ -6,6 +6,7 @@
 #include "common/utils/file_utils.h"
 #include "common/utils/path_utils.h"
 #include "common/utils/sandbox.h"
+#include "common/utils/string_utils.h"
 #include "dbus/notifier_dbus_object.h"
 
 #include <dbus_public.h>
@@ -16,6 +17,7 @@
 #include <cstdint>
 #include <fstream>
 #include <string>
+#include <string_view>
 
 #include <nlohmann/json.hpp>
 
@@ -24,6 +26,7 @@ using namespace vinput::dbus;
 namespace {
 
 constexpr const char *kContextSourceUser = "user";
+constexpr uint64_t kContextFlushDelayUsec = 5 * 1000 * 1000; // 5 seconds
 
 int64_t CurrentUnixTimestamp() {
   return std::chrono::duration_cast<std::chrono::seconds>(
@@ -136,6 +139,9 @@ VinputEngine::VinputEngine(fcitx::Instance *instance) : instance_(instance) {
         if (result_menu_ic_ == ic) {
           hideResultMenu();
         }
+        if (context_buffer_ic_ == ic) {
+          flushContextBuffer();
+        }
       }));
 
   eventHandlers_.emplace_back(instance_->watchEvent(
@@ -143,7 +149,7 @@ VinputEngine::VinputEngine(fcitx::Instance *instance) : instance_(instance) {
       fcitx::EventWatcherPhase::PostInputMethod, [this](fcitx::Event &event) {
         auto &commitEvent =
             static_cast<fcitx::CommitStringEvent &>(event);
-        onCommitString(commitEvent.text());
+        onCommitString(commitEvent.text(), commitEvent.inputContext());
       }));
 
   auto *dbus_addon = instance_->addonManager().addon("dbus");
@@ -164,6 +170,8 @@ VinputEngine::VinputEngine(fcitx::Instance *instance) : instance_(instance) {
 }
 
 VinputEngine::~VinputEngine() {
+  flushContextBuffer();
+  context_flush_timer_.reset();
   status_sync_event_.reset();
   pending_stop_event_.reset();
 
@@ -247,6 +255,11 @@ void VinputEngine::appendContextEntry(const std::string &text,
   if (text.empty()) {
     return;
   }
+  // Flush user buffer before writing non-user entries to preserve ordering.
+  if (source && std::string_view(source) != kContextSourceUser &&
+      !context_buffer_text_.empty()) {
+    flushContextBuffer();
+  }
   const auto path = vinput::path::ContextCachePath();
   std::error_code ec;
   std::filesystem::create_directories(path.parent_path(), ec);
@@ -305,7 +318,66 @@ void VinputEngine::suppressNextCommitContext(const std::string &text) {
   pending_suppressed_commit_text_ = text;
 }
 
-void VinputEngine::onCommitString(const std::string &text) {
+void VinputEngine::flushContextBuffer() {
+  if (context_buffer_text_.empty()) {
+    return;
+  }
+  appendContextEntry(context_buffer_text_, kContextSourceUser);
+  context_buffer_text_.clear();
+  context_buffer_ic_ = nullptr;
+  if (context_flush_timer_) {
+    context_flush_timer_->setEnabled(false);
+  }
+}
+
+void VinputEngine::accumulateContextBuffer(const std::string &text,
+                                           fcitx::InputContext *ic) {
+  // IC changed — flush old buffer first.
+  if (ic != context_buffer_ic_ && !context_buffer_text_.empty()) {
+    flushContextBuffer();
+  }
+  context_buffer_ic_ = ic;
+
+  // Language-aware joining.
+  if (!context_buffer_text_.empty()) {
+    const bool cjk_boundary =
+        vinput::str::IsCjkCodepoint(
+            vinput::str::LastUtf8Codepoint(context_buffer_text_)) ||
+        vinput::str::IsCjkCodepoint(
+            vinput::str::FirstUtf8Codepoint(text));
+    if (!cjk_boundary && context_buffer_text_.back() != ' ') {
+      context_buffer_text_ += ' ';
+    }
+  }
+  context_buffer_text_ += text;
+
+  // Sentence-ending punctuation → flush immediately.
+  const uint32_t last_cp =
+      vinput::str::LastUtf8Codepoint(context_buffer_text_);
+  if (vinput::str::IsSentenceEndingPunctuation(last_cp)) {
+    flushContextBuffer();
+    return;
+  }
+
+  // Reset 5s inactivity timer.
+  const auto fire_at =
+      fcitx::now(CLOCK_MONOTONIC) + kContextFlushDelayUsec;
+  if (!context_flush_timer_) {
+    context_flush_timer_ = instance_->eventLoop().addTimeEvent(
+        CLOCK_MONOTONIC, fire_at, 0,
+        [this](fcitx::EventSourceTime *, uint64_t) {
+          flushContextBuffer();
+          return false;
+        });
+    context_flush_timer_->setOneShot();
+  } else {
+    context_flush_timer_->setTime(fire_at);
+    context_flush_timer_->setEnabled(true);
+  }
+}
+
+void VinputEngine::onCommitString(const std::string &text,
+                                  fcitx::InputContext *ic) {
   if (text.empty()) {
     return;
   }
@@ -316,7 +388,7 @@ void VinputEngine::onCommitString(const std::string &text) {
       return;
     }
   }
-  appendContextEntry(text, kContextSourceUser);
+  accumulateContextBuffer(text, ic);
 }
 
 fcitx::AddonInstance *

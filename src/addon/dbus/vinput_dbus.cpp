@@ -333,6 +333,7 @@ void VinputEngine::setupDBusWatcher() {
 
 bool VinputEngine::callStartRecording() {
   command_selected_text_.clear();
+  flushContextBuffer();
   if (!bus_ || !daemonSyncAllowed()) {
     noteDaemonSyncFailure();
     return false;
@@ -369,6 +370,7 @@ bool VinputEngine::callStartRecording() {
 
 bool VinputEngine::callStartCommandRecording(const std::string &selected_text) {
   command_selected_text_ = selected_text;
+  flushContextBuffer();
   if (!bus_ || !daemonSyncAllowed()) {
     noteDaemonSyncFailure();
     return false;
