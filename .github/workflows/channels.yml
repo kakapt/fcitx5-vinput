@@ -255,5 +255,8 @@ jobs:
           name: fcitx5-vinput
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
+      - name: Update sherpa-onnx flake input
+        run: nix flake update sherpa-onnx
+
       - name: Build and push to Cachix
         run: nix build .#fcitx5-vinput --no-link
