@@ -35,7 +35,7 @@
         system:
         let
           pkgs = pkgsFor system;
-          sherpa-deps = sherpa-onnx.packages."${pkgs.stdenv.hostPlatform.system}";
+          sherpa-deps = sherpa-onnx.packages.${system};
         in
         {
           fcitx5-vinput = pkgs.stdenv.mkDerivation {
@@ -91,7 +91,7 @@
         system:
         let
           pkgs = pkgsFor system;
-          sherpa-deps = sherpa-onnx.packages."${pkgs.stdenv.hostPlatform.system}";
+          sherpa-deps = sherpa-onnx.packages.${system};
         in
         {
           default = pkgs.mkShell {
