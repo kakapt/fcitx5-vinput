@@ -1038,3 +1038,19 @@ msgstr "无效的 JSON 响应：%s"
 #, c-format
 msgid "Connected to '%s'. Found %d model(s)."
 msgstr "已连接'%s'。找到 %d 个模型。"
+
+msgid ""
+"Extra JSON object merged into each request body (e.g. '{\"enable_thinking\": "
+"false}')"
+msgstr "合并进每次请求体的附加 JSON 对象（例如 '{\"enable_thinking\": false}'）"
+
+msgid "Extra JSON object merged into each request body; pass '{}' to clear"
+msgstr "合并进每次请求体的附加 JSON 对象；传 '{}' 清空"
+
+msgid ""
+"--extra-body must be a JSON object (e.g. '{\"enable_thinking\": false}')."
+msgstr "--extra-body 必须是 JSON 对象（例如 '{\"enable_thinking\": false}'）。"
+
+#, c-format
+msgid "Invalid --extra-body JSON: %s"
+msgstr "--extra-body JSON 无效：%s"

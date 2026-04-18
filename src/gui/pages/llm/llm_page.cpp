@@ -3,6 +3,7 @@
 #include <QComboBox>
 #include <QDialog>
 #include <QDialogButtonBox>
+#include <QFontMetrics>
 #include <QFormLayout>
 #include <QHBoxLayout>
 #include <QJsonArray>
@@ -16,6 +17,7 @@
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
+#include <QPlainTextEdit>
 #include <QPointer>
 #include <QPushButton>
 #include <QSpinBox>
@@ -23,6 +25,8 @@
 #include <QThreadPool>
 #include <QTimer>
 #include <QVBoxLayout>
+
+#include <nlohmann/json.hpp>
 
 #include "dialogs/adapter_dialog.h"
 #include "utils/gui_helpers.h"
@@ -48,6 +52,48 @@ vinput::scene::Config ToSceneConfig(const CoreConfig::Scenes& sc) {
 void FromSceneConfig(CoreConfig::Scenes& sc, const vinput::scene::Config& c) {
   sc.activeScene = c.activeSceneId;
   sc.definitions = c.scenes;
+}
+
+// Parses the Extra body JSON text from a dialog. Returns true with `out` set
+// on success (or empty-object when text is blank); false after showing a
+// QMessageBox on parse error or non-object payloads.
+bool ParseExtraBodyInput(QWidget *parent, const QString &text,
+                         nlohmann::json *out) {
+  const std::string trimmed = text.trimmed().toStdString();
+  if (trimmed.empty()) {
+    *out = nlohmann::json::object();
+    return true;
+  }
+  try {
+    auto parsed = nlohmann::json::parse(trimmed);
+    if (!parsed.is_object()) {
+      QMessageBox::warning(
+          parent, LlmPage::tr("Error"),
+          LlmPage::tr("Extra body must be a JSON object (e.g. {\"enable_thinking\": false})."));
+      return false;
+    }
+    *out = std::move(parsed);
+    return true;
+  } catch (const std::exception &e) {
+    QMessageBox::warning(
+        parent, LlmPage::tr("Error"),
+        LlmPage::tr("Invalid extra_body JSON: %1").arg(QString::fromUtf8(e.what())));
+    return false;
+  }
+}
+
+QPlainTextEdit *MakeExtraBodyEditor(const nlohmann::json *prefill = nullptr) {
+  auto *edit = new QPlainTextEdit();
+  edit->setPlaceholderText(
+      LlmPage::tr("Optional JSON object merged into each request body, e.g. "
+                  "{\"enable_thinking\": false}"));
+  edit->setTabChangesFocus(true);
+  const QFontMetrics fm(edit->font());
+  edit->setFixedHeight(fm.lineSpacing() * 5 + 8);
+  if (prefill && prefill->is_object() && !prefill->empty()) {
+    edit->setPlainText(QString::fromStdString(prefill->dump(2)));
+  }
+  return edit;
 }
 
 constexpr int kDefaultTimeoutMs = vinput::scene::kDefaultTimeoutMs;
@@ -256,10 +302,12 @@ void LlmPage::onLlmAdd() {
   auto *editBaseUrl = new QLineEdit();
   auto *editApiKey = new QLineEdit();
   editApiKey->setEchoMode(QLineEdit::Password);
+  auto *editExtraBody = MakeExtraBodyEditor();
 
   form->addRow(tr("Name:"), editName);
   form->addRow(tr("Base URL:"), editBaseUrl);
   form->addRow(tr("API Key:"), editApiKey);
+  form->addRow(tr("Extra body (JSON):"), editExtraBody);
 
   auto *buttons =
       new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
@@ -281,6 +329,11 @@ void LlmPage::onLlmAdd() {
     return;
   }
 
+  nlohmann::json extra_body;
+  if (!ParseExtraBodyInput(this, editExtraBody->toPlainText(), &extra_body)) {
+    return;
+  }
+
   CoreConfig config = ConfigManager::Get().Load();
   if (ResolveLlmProvider(config, name_text.toStdString()) != nullptr) {
     QMessageBox::warning(this, tr("Error"), tr("LLM provider '%1' already exists.").arg(name_text));
@@ -291,6 +344,7 @@ void LlmPage::onLlmAdd() {
   provider.id = name_text.toStdString();
   provider.base_url = base_url_text.toStdString();
   provider.api_key = editApiKey->text().toStdString();
+  provider.extra_body = std::move(extra_body);
   config.llm.providers.push_back(std::move(provider));
 
   if (!ConfigManager::Get().Save(config)) {
@@ -324,10 +378,12 @@ void LlmPage::onLlmEdit() {
   auto *editApiKey = new QLineEdit();
   editApiKey->setEchoMode(QLineEdit::Password);
   editApiKey->setPlaceholderText(tr("Leave empty to keep current key"));
+  auto *editExtraBody = MakeExtraBodyEditor(&prov->extra_body);
 
   form->addRow(tr("Name:"), editName);
   form->addRow(tr("Base URL:"), editBaseUrl);
   form->addRow(tr("API Key:"), editApiKey);
+  form->addRow(tr("Extra body (JSON):"), editExtraBody);
 
   auto *buttons =
       new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
@@ -348,6 +404,11 @@ void LlmPage::onLlmEdit() {
     return;
   }
 
+  nlohmann::json extra_body;
+  if (!ParseExtraBodyInput(this, editExtraBody->toPlainText(), &extra_body)) {
+    return;
+  }
+
   auto &providers = config.llm.providers;
   auto it = std::find_if(providers.begin(), providers.end(), [&](const LlmProvider &p) { return p.id == provider_name.toStdString(); });
   if (it != providers.end()) {
@@ -355,6 +416,7 @@ void LlmPage::onLlmEdit() {
       if (!editApiKey->text().isEmpty()) {
           it->api_key = editApiKey->text().toStdString();
       }
+      it->extra_body = std::move(extra_body);
       if (!ConfigManager::Get().Save(config)) {
           QMessageBox::warning(this, tr("Error"), tr("Failed to save config."));
           return;

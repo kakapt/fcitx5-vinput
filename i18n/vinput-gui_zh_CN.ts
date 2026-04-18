@@ -616,4 +616,23 @@ Found %2 model(s).</source>
         <translation>正在安装适配器 %1...</translation>
     </message>
 </context>
+<context>
+    <name>LlmPage</name>
+    <message>
+        <source>Extra body (JSON):</source>
+        <translation>附加请求体 (JSON)：</translation>
+    </message>
+    <message>
+        <source>Optional JSON object merged into each request body, e.g. {&quot;enable_thinking&quot;: false}</source>
+        <translation>可选的 JSON 对象，将合并进每次请求体，例如 {&quot;enable_thinking&quot;: false}</translation>
+    </message>
+    <message>
+        <source>Extra body must be a JSON object (e.g. {&quot;enable_thinking&quot;: false}).</source>
+        <translation>附加请求体必须是 JSON 对象（例如 {&quot;enable_thinking&quot;: false}）。</translation>
+    </message>
+    <message>
+        <source>Invalid extra_body JSON: %1</source>
+        <translation>extra_body JSON 无效：%1</translation>
+    </message>
+</context>
 </TS>

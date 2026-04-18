@@ -23,13 +23,18 @@ void RegisterLlmCommands(CLI::App &app, CliAction *action) {
   auto id = std::make_shared<std::string>();
   auto baseUrl = std::make_shared<std::string>();
   auto apiKey = std::make_shared<std::string>();
+  auto extraBody = std::make_shared<std::string>();
   auto *add = llm->add_subcommand("add", _("Add an LLM provider"));
   add->add_option("id", *id, _("Provider ID"))->required();
   add->add_option("-u,--base-url", *baseUrl, _("Base URL"))->required();
   add->add_option("-k,--api-key", *apiKey, _("API key"));
-  add->callback([action, id, baseUrl, apiKey]() {
-    *action = [id, baseUrl, apiKey](Formatter &fmt, const CliContext &ctx) {
-      return RunLlmConfigAdd(*id, *baseUrl, *apiKey, fmt, ctx);
+  add->add_option("-e,--extra-body", *extraBody,
+                  _("Extra JSON object merged into each request body (e.g. "
+                    "'{\"enable_thinking\": false}')"));
+  add->callback([action, id, baseUrl, apiKey, extraBody]() {
+    *action = [id, baseUrl, apiKey, extraBody](Formatter &fmt,
+                                               const CliContext &ctx) {
+      return RunLlmConfigAdd(*id, *baseUrl, *apiKey, *extraBody, fmt, ctx);
     };
   });
 
@@ -47,8 +52,10 @@ void RegisterLlmCommands(CLI::App &app, CliAction *action) {
     std::string id;
     std::string baseUrl;
     std::string apiKey;
+    std::string extraBody;
     bool hasBaseUrl = false;
     bool hasApiKey = false;
+    bool hasExtraBody = false;
   };
   auto editState = std::make_shared<EditState>();
   auto *edit = llm->add_subcommand("edit", _("Edit an LLM provider"));
@@ -58,13 +65,18 @@ void RegisterLlmCommands(CLI::App &app, CliAction *action) {
       edit->add_option("-u,--base-url", editState->baseUrl, _("Base URL"));
   auto *editKeyOpt =
       edit->add_option("-k,--api-key", editState->apiKey, _("API key"));
-  edit->callback([action, editState, editUrlOpt, editKeyOpt]() {
+  auto *editExtraOpt = edit->add_option(
+      "-e,--extra-body", editState->extraBody,
+      _("Extra JSON object merged into each request body; pass '{}' to clear"));
+  edit->callback([action, editState, editUrlOpt, editKeyOpt, editExtraOpt]() {
     editState->hasBaseUrl = editUrlOpt->count() > 0;
     editState->hasApiKey = editKeyOpt->count() > 0;
+    editState->hasExtraBody = editExtraOpt->count() > 0;
     *action = [editState](Formatter &fmt, const CliContext &ctx) {
       return RunLlmConfigEdit(editState->id, editState->baseUrl,
-                              editState->apiKey, editState->hasBaseUrl,
-                              editState->hasApiKey, fmt, ctx);
+                              editState->apiKey, editState->extraBody,
+                              editState->hasBaseUrl, editState->hasApiKey,
+                              editState->hasExtraBody, fmt, ctx);
     };
   });
 

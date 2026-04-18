@@ -25,6 +25,28 @@ std::string MaskApiKey(const std::string &key) {
          key.substr(key.size() - 4);
 }
 
+bool ParseExtraBody(const std::string &raw, nlohmann::json *out,
+                    Formatter &fmt) {
+  if (raw.empty()) {
+    *out = nlohmann::json::object();
+    return true;
+  }
+  try {
+    auto parsed = nlohmann::json::parse(raw);
+    if (!parsed.is_object()) {
+      fmt.PrintError(_("--extra-body must be a JSON object (e.g. "
+                       "'{\"enable_thinking\": false}')."));
+      return false;
+    }
+    *out = std::move(parsed);
+    return true;
+  } catch (const std::exception &e) {
+    fmt.PrintError(vinput::str::FmtStr(_("Invalid --extra-body JSON: %s"),
+                                       e.what()));
+    return false;
+  }
+}
+
 }  // namespace
 
 int RunLlmConfigList(Formatter &fmt, const CliContext &ctx) {
@@ -37,6 +59,8 @@ int RunLlmConfigList(Formatter &fmt, const CliContext &ctx) {
           {"id", provider.id},
           {"base_url", provider.base_url},
           {"api_key", ""},
+          {"extra_body", provider.extra_body.is_object() ? provider.extra_body
+                                                         : nlohmann::json::object()},
       });
     }
     fmt.PrintJson(providers);
@@ -158,8 +182,8 @@ int RunLlmConfigListAdapters(bool available, Formatter &fmt,
 }
 
 int RunLlmConfigAdd(const std::string &id, const std::string &baseUrl,
-                    const std::string &apiKey, Formatter &fmt,
-                    const CliContext &ctx) {
+                    const std::string &apiKey, const std::string &extraBody,
+                    Formatter &fmt, const CliContext &ctx) {
   (void)ctx;
   CoreConfig config = LoadCoreConfig();
   if (ResolveLlmProvider(config, id) != nullptr) {
@@ -167,10 +191,16 @@ int RunLlmConfigAdd(const std::string &id, const std::string &baseUrl,
     return 1;
   }
 
+  nlohmann::json extra_json;
+  if (!ParseExtraBody(extraBody, &extra_json, fmt)) {
+    return 1;
+  }
+
   LlmProvider provider;
   provider.id = id;
   provider.base_url = baseUrl;
   provider.api_key = apiKey;
+  provider.extra_body = std::move(extra_json);
   config.llm.providers.push_back(std::move(provider));
 
   if (!SaveConfigOrFail(config, fmt)) {
@@ -301,7 +331,8 @@ int RunLlmConfigRemove(const std::string &id, Formatter &fmt,
 }
 
 int RunLlmConfigEdit(const std::string &id, const std::string &baseUrl,
-                     const std::string &apiKey, bool hasBaseUrl, bool hasApiKey,
+                     const std::string &apiKey, const std::string &extraBody,
+                     bool hasBaseUrl, bool hasApiKey, bool hasExtraBody,
                      Formatter &fmt, const CliContext &ctx) {
   (void)ctx;
   CoreConfig config = LoadCoreConfig();
@@ -319,6 +350,13 @@ int RunLlmConfigEdit(const std::string &id, const std::string &baseUrl,
   }
   if (hasApiKey) {
     it->api_key = apiKey;
+  }
+  if (hasExtraBody) {
+    nlohmann::json extra_json;
+    if (!ParseExtraBody(extraBody, &extra_json, fmt)) {
+      return 1;
+    }
+    it->extra_body = std::move(extra_json);
   }
 
   if (!SaveConfigOrFail(config, fmt)) {

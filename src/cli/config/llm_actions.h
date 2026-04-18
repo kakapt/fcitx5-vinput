@@ -9,8 +9,8 @@ int RunLlmConfigList(Formatter &fmt, const CliContext &ctx);
 int RunLlmConfigListAdapters(bool available, Formatter &fmt,
                              const CliContext &ctx);
 int RunLlmConfigAdd(const std::string &id, const std::string &baseUrl,
-                    const std::string &apiKey, Formatter &fmt,
-                    const CliContext &ctx);
+                    const std::string &apiKey, const std::string &extraBody,
+                    Formatter &fmt, const CliContext &ctx);
 int RunLlmConfigInstallAdapter(const std::string &selector, Formatter &fmt,
                                const CliContext &ctx);
 int RunLlmConfigStartAdapter(const std::string &id, Formatter &fmt,
@@ -20,7 +20,8 @@ int RunLlmConfigStopAdapter(const std::string &id, Formatter &fmt,
 int RunLlmConfigRemove(const std::string &id, Formatter &fmt,
                        const CliContext &ctx);
 int RunLlmConfigEdit(const std::string &id, const std::string &baseUrl,
-                     const std::string &apiKey, bool hasBaseUrl, bool hasApiKey,
+                     const std::string &apiKey, const std::string &extraBody,
+                     bool hasBaseUrl, bool hasApiKey, bool hasExtraBody,
                      Formatter &fmt, const CliContext &ctx);
 int RunLlmConfigTest(const std::string &id, Formatter &fmt,
                      const CliContext &ctx);

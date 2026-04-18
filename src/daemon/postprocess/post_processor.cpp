@@ -8,6 +8,7 @@
 #include <nlohmann/json.hpp>
 
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <cstdlib>
 #include <cstdio>
@@ -258,6 +259,33 @@ std::string BuildConstraintsSuffix(int candidate_count) {
   return buf;
 }
 
+// Merge user-supplied extra_body fields into the outgoing request. Some
+// top-level fields are load-bearing for the candidates contract (messages
+// schema, non-streaming response, json_object response_format) and are refused
+// to prevent the merge from breaking response parsing. Everything else passes
+// through so provider-specific knobs like enable_thinking / reasoning /
+// thinking / top_p work without a whitelist.
+void MergeExtraBody(json &request, const nlohmann::json &extra,
+                    const LlmProvider &provider) {
+  if (!extra.is_object() || extra.empty()) {
+    return;
+  }
+  static constexpr std::array<std::string_view, 3> kProtected = {
+      "messages", "stream", "response_format"};
+  for (auto it = extra.begin(); it != extra.end(); ++it) {
+    const std::string &key = it.key();
+    if (std::find(kProtected.begin(), kProtected.end(), key) !=
+        kProtected.end()) {
+      vinput::debug::Log(
+          "LLM extra_body provider=%s: ignoring protected key '%s'\n",
+          provider.id.empty() ? "(unnamed)" : provider.id.c_str(),
+          key.c_str());
+      continue;
+    }
+    request[key] = it.value();
+  }
+}
+
 std::optional<std::vector<std::string>>
 RewriteWithOpenAiCompatible(const std::string &text,
                             const vinput::scene::Definition &scene,
@@ -308,6 +336,7 @@ RewriteWithOpenAiCompatible(const std::string &text,
       {"response_format", BuildCandidatesResponseFormat()},
       {"messages", std::move(messages)},
   };
+  MergeExtraBody(request, provider.extra_body, provider);
   const std::string request_body = request.dump();
 
   guard.headers =

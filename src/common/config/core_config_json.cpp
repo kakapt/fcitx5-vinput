@@ -22,12 +22,20 @@ void to_json(json &j, const LlmProvider &p) {
   if (!p.api_key.empty()) {
     j["api_key"] = p.api_key;
   }
+  if (p.extra_body.is_object() && !p.extra_body.empty()) {
+    j["extra_body"] = p.extra_body;
+  }
 }
 
 void from_json(const json &j, LlmProvider &p) {
   p.id = j.value("id", p.id);
   p.base_url = j.value("base_url", p.base_url);
   p.api_key = j.value("api_key", p.api_key);
+  if (j.contains("extra_body") && j.at("extra_body").is_object()) {
+    p.extra_body = j.at("extra_body");
+  } else {
+    p.extra_body = nlohmann::json::object();
+  }
 }
 
 // ---------------------------------------------------------------------------

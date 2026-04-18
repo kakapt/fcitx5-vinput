@@ -5,6 +5,8 @@
 #include <variant>
 #include <vector>
 
+#include <nlohmann/json.hpp>
+
 #include "common/scene/postprocess_scene.h"
 
 namespace vinput::asr {
@@ -18,6 +20,7 @@ struct LlmProvider {
   std::string id;
   std::string base_url;
   std::string api_key;
+  nlohmann::json extra_body = nlohmann::json::object();
 };
 
 struct LlmAdapter {
