@@ -1,22 +1,14 @@
 {
   description = "Local offline voice input plugin for Fcitx5";
 
-  nixConfig = {
-    extra-substituters = [ "https://fcitx5-vinput.cachix.org" ];
-    extra-trusted-public-keys = [ "fcitx5-vinput.cachix.org-1:XpX3AA6+dDIX4qJhb1QM7sbTwX6/qSlGvW8Z5NK6XdU=" ];
-  };
-
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
-    sherpa-onnx.url = "github:xifan2333/sherpa-onnx-flake";
-    sherpa-onnx.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs =
     {
       self,
       nixpkgs,
-      sherpa-onnx,
     }:
     let
       systems = [
@@ -25,7 +17,11 @@
       ];
 
       forAllSystems = nixpkgs.lib.genAttrs systems;
-      pkgsFor = system: import nixpkgs { inherit system; };
+      pkgsFor =
+        system:
+        import nixpkgs {
+          inherit system;
+        };
       version = nixpkgs.lib.removeSuffix "\n" (builtins.readFile ./VERSION);
     in
     {
@@ -35,7 +31,6 @@
         system:
         let
           pkgs = pkgsFor system;
-          sherpa-deps = sherpa-onnx.packages.${system};
         in
         {
           fcitx5-vinput = pkgs.stdenv.mkDerivation {
@@ -62,7 +57,7 @@
               onnxruntime
               qt6.qtbase
               cli11
-              sherpa-deps.sherpa-onnx
+              sherpa-onnx
               nlohmann_json
               clang
               mold
@@ -91,7 +86,6 @@
         system:
         let
           pkgs = pkgsFor system;
-          sherpa-deps = sherpa-onnx.packages.${system};
         in
         {
           default = pkgs.mkShell {
@@ -109,7 +103,7 @@
               qt6.qtbase
               qt6.wrapQtAppsHook
               cli11
-              sherpa-deps.sherpa-onnx
+              sherpa-onnx
               nlohmann_json
             ];
           };
