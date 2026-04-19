@@ -220,7 +220,7 @@ Model entries in `models.json` describe downloadable sherpa-onnx model archives.
 |-------|-------------|
 | `backend` | `sherpa-offline` or `sherpa-streaming` |
 | `runtime` | `offline` or `online` |
-| `family` | sherpa-onnx C API family: `dolphin`, `sense_voice`, `paraformer`, `transducer`, `qwen3_asr` |
+| `family` | sherpa-onnx C API family: `dolphin`, `sense_voice`, `paraformer`, `transducer`, `qwen3_asr`, `cohere_transcribe` |
 | `language` | Language code |
 | `size_bytes` | Model size |
 | `supports_hotwords` | Whether hotword boosting is supported |

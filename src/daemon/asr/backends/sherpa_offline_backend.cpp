@@ -260,6 +260,20 @@ CreateOfflineRecognizer(const ModelInfo &info, const AsrConfig &asr_config,
          if (!config.model_config.model_type)
            config.model_config.model_type = "canary";
        }},
+      {"cohere_transcribe",
+       [&] {
+         config.model_config.cohere_transcribe.encoder = f_encoder.c_str();
+         config.model_config.cohere_transcribe.decoder = f_decoder.c_str();
+         cfg_language = JsonString(family_cfg, "language", p_language);
+         config.model_config.cohere_transcribe.language =
+             cfg_language.c_str();
+         config.model_config.cohere_transcribe.use_punct =
+             JsonBool(family_cfg, "use_punct") ? 1 : 0;
+         config.model_config.cohere_transcribe.use_itn =
+             JsonBool(family_cfg, "use_itn") ? 1 : 0;
+         if (!config.model_config.model_type)
+           config.model_config.model_type = "cohere_transcribe";
+       }},
       {"funasr_nano",
        [&] {
          config.model_config.funasr_nano.encoder_adaptor =

@@ -220,7 +220,7 @@ resources/adapters/<目录>/<名称>/
 |------|------|
 | `backend` | `sherpa-offline` 或 `sherpa-streaming` |
 | `runtime` | `offline` 或 `online` |
-| `family` | sherpa-onnx C API 族：`dolphin`、`sense_voice`、`paraformer`、`transducer`、`qwen3_asr` |
+| `family` | sherpa-onnx C API 族：`dolphin`、`sense_voice`、`paraformer`、`transducer`、`qwen3_asr`、`cohere_transcribe` |
 | `language` | 语言代码 |
 | `size_bytes` | 模型大小 |
 | `supports_hotwords` | 是否支持热词 |
